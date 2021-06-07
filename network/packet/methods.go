@@ -10,26 +10,26 @@ func (p *Packet) Create(ID types.Byte, Data ...types.Encodable) {
 	for _, v := range Data {
 		p.Data = append(p.Data, v.Encode()...)
 	}
-	p.Data = append(p.Data, Byte(10))
+	p.Data = append(p.Data, types.Byte(10))
 	return
 }
 
-func (p Packet) Bytes() (Converted []Byte) {
+func (p Packet) Bytes() (Converted types.ByteArray) {
 	x := 0
-	Converted = make([]Byte, 2 + len(p.Data))
+	Converted = make(types.ByteArray, 2 + len(p.Data))
 	Size := types.VariableInteger(2 + len(p.Data)).Encode()
 	for _, v := range Size {
 		Converted[x] = v
 		x += 1
 	}
-	Converted[x] = Byte(p.ID)
+	Converted[x] = types.Byte(p.ID)
 	for i, v := range p.Data {
 		Converted[x + 1 + i] = v
 	}
 	return
 }
 
-func (p *Packet) Convert(Read ByteArray) (Error error) {
+func (p *Packet) Convert(Read types.ByteArray) (Error error) {
 	if (len(Read) < 2) {
 		Error = errors.New("There is nothing to convert")
 		return
@@ -47,7 +47,7 @@ func (p *Packet) Convert(Read ByteArray) (Error error) {
 		}
 		x++
 	}
-	p.ID = Byte(Read[x])
+	p.ID = types.Byte(Read[x])
 	p.Data = Read[x+1:]
 	return
 }
