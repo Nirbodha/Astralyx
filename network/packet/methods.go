@@ -41,7 +41,7 @@ func (p *Packet) Convert(Read types.ByteArray) (Error error) {
 			Error = errors.New("Size byte(s) do(es) not add up with the size of the packet")
 			return
 		}
-		v.Decode(Read[x])
+		v.Decode(Read[0:x])
 		if (int(v) == len(Read)) {
 			break
 		}
