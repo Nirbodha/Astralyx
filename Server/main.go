@@ -6,6 +6,8 @@ import (
 	"strings"
 	"math"
 	"errors"
+	"bufio"
+	//"bytes"
 	//"io"
 )
 
@@ -65,12 +67,15 @@ func (c *Client) Disconnect(Reason string) {
 
 //Read and Write are low-level functions.
 
-func (c *Client) Read() (int, error) { 
-	Data := make([]byte, 4096)
-	BytesRead, Err := c.Connection.Read(Data)
-	Data[BytesRead] = byte(10)
+func (c *Client) Read() (int, error) {
+	var Data []byte
+	//BytesRead, Err := c.Connection.Read()
+	//BytesRead, Err := Data.ReadFrom(c.Connection)
+	Data, Err := bufio.NewReader(c.Connection).ReadBytes(byte(10))
+	//Data[int(BytesRead)] = byte(10)
 	c.Incoming <- Data
-	return BytesRead, Err
+	return 0, Err
+	//return int(BytesRead), Err
 
 }
 
@@ -199,7 +204,7 @@ func (p *Packet) Create(ID Byte, Data ...Encodable) {
 	for _, v := range Data { 
 		p.Data = append(p.Data, v.Encode()...)
 	}
-	
+	p.Data = append(p.Data, byte(10))
 	return
 }
 
@@ -212,7 +217,6 @@ func (p *Packet) ToBytes() (Converted []byte) {
 		x += 1
 	}
 	Converted[x] = byte(p.ID)
-	fmt.Println(p.ID, Converted[x])
 	for i, v := range p.Data {
 		Converted[x + 1 + i] = v
 	}
@@ -221,8 +225,12 @@ func (p *Packet) ToBytes() (Converted []byte) {
 
 
 func (p *Packet) Convert(Read []byte) (Error error) {
+	if (len(Read) == 0 || len(Read) == 1 ) {
+		Error = errors.New("There is nothing to convert")
+		return
+	}
 	x := int(1)
-	for x <= 7 {
+	for  x < len(Read) - 1 && x <= 7 {
 		var v VariableInteger
 		if (x == 7) {
 			Error = errors.New("Size byte(s) do(es) not add up with the size of the packet")
@@ -240,13 +248,8 @@ func (p *Packet) Convert(Read []byte) (Error error) {
 }
 
 
-
-
-// Example chatroom. Uncomment if you want to test this out. This is not the best chatroom out there. Use at your own risk. This doesn't use packets unfortunately. My makeshift client is netcat, and unless I type my messages, convert them into bytes, and count up the total packet size, it'll not work.
-/*
-
 func ConnectionTidbits(c Client) {
-	c.Write([]byte("Welcome! Please enter a name.\n"))
+	/*c.Write([]byte("Welcome! Please enter a name.\n"))
 	GetName(&c)
 	for {
 		if c.Connection == nil {
@@ -261,6 +264,31 @@ func ConnectionTidbits(c Client) {
 		readData = []byte(strings.ReplaceAll(string(readData), "\n", ""))
 		//c.Broadcast(<-c.Incoming)
 		c.Broadcast([]byte(Green + "\n[" + c.Name + "] " + Default + string(readData)))
+	}*/
+	for {
+		_, Err := c.Read()
+		if (Err != nil) {
+			c.Disconnect(Err.Error())
+			return
+		}
+		var result Packet
+		received := <-c.Incoming
+		Err = result.Convert(received)
+		if (Err != nil) {
+			//
+		}
+		if (result.ID == Byte(0)) {
+			var responsePacket Packet
+			responsePacket.Create(Byte(0), Byte(1))
+			console.Notify(c.IP, "pinged. Responded with 0x1.")
+			c.Write(responsePacket.ToBytes())
+		}
+		if (result.ID == Byte(2)) {
+			var responsePacket Packet
+			console.Notify(c.IP, strings.ReplaceAll(string(result.Data), "\n", ""))
+			responsePacket.Create(Byte(2), Byte(1))
+			c.Write(responsePacket.ToBytes())
+		}
 	}
 
 }
@@ -294,7 +322,7 @@ func main() {
 
 //Miscellaneous Functions
 
-func GetName(c *Client) {
+/*func GetName(c *Client) {
 	c.Write([]byte("Enter your name: "))
 	c.Read()
 	Name := string(<-c.Incoming)
