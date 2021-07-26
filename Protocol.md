@@ -1,4 +1,6 @@
 # Protocol
+**Warning! This is actually the first time I'm trying to write a protocol. Expect some stupidity.**
+
 This is the protocol that the client and the server use. The hexadecimal numbers are the IDs to the packets.
 \
 \
