@@ -1,3 +1,5 @@
+// This has to be reworked. It's clunky, and it's garbage. Do not use whatsoever.
+
 package main
 
 import (
